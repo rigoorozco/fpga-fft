@@ -30,7 +30,7 @@ def bitOrderDescription(bitOrder):
 	return '(%d downto 0) [%s]' % (len(bitOrder)-1, listStr)
 
 def bitOrderIsNatural(bitOrder):
-	for i in xrange(len(bitOrder)):
+	for i in range(len(bitOrder)):
 		if bitOrder[i] != i:
 			return False
 	return True
@@ -42,18 +42,18 @@ def bitOrderToVHDL(bitOrder, srcSignal):
 	return '&'.join([fmt % i for i in bitOrder[::-1]])
 
 def bitOrderNTimes(bitOrder, n):
-	res = range(len(bitOrder))
-	for i in xrange(n):
+	res = list(range(len(bitOrder)))
+	for i in range(n):
 		res = [res[x] for x in bitOrder]
 	return res
 
 def bitOrderConstraintLength(bitOrder):
-	tmp = range(len(bitOrder))
-	for i in xrange(1000):
+	tmp = list(range(len(bitOrder)))
+	for i in range(1000):
 		tmp = [tmp[x] for x in bitOrder]
 		if bitOrderIsNatural(tmp): return i+1
 
-	print >> sys.stderr, 'bad bit order: ' + str(bitOrder)
+	print('bad bit order: ' + str(bitOrder), file=sys.stderr)
 	assert False
 
 def addIndent(s):
@@ -79,5 +79,4 @@ def indent(s, level):
 		ret.append(sp + line)
 	ret.append('')
 	return '\n'.join(ret)
-
 

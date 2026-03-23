@@ -9,9 +9,9 @@ from gen_fft_layouts import *
 
 def emitFile(filename, contents):
 	if outDir == '-':
-		print contents
+		print(contents, end='')
 	else:
-		f = open(filename, 'wb')
+		f = open(filename, 'w', encoding='utf-8')
 		f.write(contents)
 		f.close()
 
@@ -24,9 +24,9 @@ def emitVHDL(filename, contents):
 	emitFile(filename + '.vhd', contents)
 
 if len(sys.argv) < 3:
-	print 'usage: %s (fft|reorderer|wrapper|large) INSTANCE_TO_GENERATE OUTDIR' % sys.argv[0]
-	print 'see gen_fft_layouts.py for a list of instances or to add your own instance'
-	print 'if OUTDIR is -, output to stdout'
+	print('usage: %s (fft|reorderer|wrapper|large) INSTANCE_TO_GENERATE OUTDIR' % sys.argv[0])
+	print('see gen_fft_layouts.py for a list of instances or to add your own instance')
+	print('if OUTDIR is -, output to stdout')
 	exit(1)
 
 outpType = sys.argv[1]
@@ -58,13 +58,13 @@ if outpType == 'reorderer':
 	# generate reorderers for 1, 2, and 4 rows of data
 	for rows in [1,2,4]:
 		if bitOrderIsNatural(instance.inputBitOrder()) and rows == 1:
-			print '-- no input reorder generated because input is already natural order'
+			print('-- no input reorder generated because input is already natural order')
 		else:
 			name = instanceName + '_ireorderer' + str(rows)
 			emitVHDL(name, genReorderer(instance, False, rows, name))
 
 		if bitOrderIsNatural(instance.outputBitOrder()) and rows == 1:
-			print '-- no output reorder generated because output is already natural order'
+			print('-- no output reorder generated because output is already natural order')
 		else:
 			name = instanceName + '_oreorderer' + str(rows)
 			emitVHDL(name, genReorderer(instance, True, rows, name))
@@ -79,4 +79,3 @@ if outpType == 'large':
 		name = instanceName + '_large' + str(rows)
 		emitVHDL(name, genLargeFFT(instance, rows, name, instanceName))
 		emitVHDL(name + 'axi', genAXIWrapper(instance, rows, name + 'axi', name))
-

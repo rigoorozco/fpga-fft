@@ -71,7 +71,7 @@ class BitPermutation:
 	def genBody(self, id):
 		buf = ''
 		bOrder = self.bitOrder
-		for i in xrange(self.stateBits):
+		for i in range(self.stateBits):
 			option0 = id + 'rP%d' % i
 			option1 = bitOrderToVHDL(bOrder, option0)
 			#          0  1   2      3       4
@@ -123,12 +123,12 @@ class FFTBase:
 		self.bitGrowth = bitGrowth
 		self.imports = [entity]
 		if iBitOrder == None:
-			self.iBitOrder = range(myLog2(self.N))
+			self.iBitOrder = list(range(myLog2(self.N)))
 		else:
 			self.iBitOrder = iBitOrder
 
 		if oBitOrder == None:
-			self.oBitOrder = range(myLog2(self.N))
+			self.oBitOrder = list(range(myLog2(self.N)))
 		else:
 			self.oBitOrder = oBitOrder
 
@@ -190,7 +190,7 @@ class FFTBase:
 					'order', myLog2(self.N),
 					'delay', self.delay()]
 		constants = ''
-		for i in xrange(0, len(constantsArr), 2):
+		for i in range(0, len(constantsArr), 2):
 			name = constantsArr[i]
 			val = str(constantsArr[i+1])
 			constants += 'constant %s%s: integer := %s;\n' % (id, name,val)
@@ -310,7 +310,7 @@ class FFT4Step:
 		O2 = myLog2(self.sub2.N)
 
 		if self.sub2Transposer:
-			tmp = range(O1,O1+O2)
+			tmp = list(range(O1, O1 + O2))
 		else:
 			tmp = [x+O1 for x in self.sub2.inputBitOrder()]
 
@@ -351,7 +351,7 @@ class FFT4Step:
 					sub1 + 'dataBits', id + 'dataBits',
 					sub2 + 'dataBits', id + 'dataBitsIntern']
 		constants = ''
-		for i in xrange(0, len(constantsArr), 2):
+		for i in range(0, len(constantsArr), 2):
 			name = constantsArr[i]
 			val = str(constantsArr[i+1])
 			constants += 'constant %s%s: integer := %s;\n' % (id, name,val)
@@ -587,7 +587,7 @@ class FFTSPDF:
 		self.multDelay = multiplier.delay()
 		self.twiddleBits = twiddleBits
 		self.reorderAdditiveDelay = 0
-		self.spdf_delay = N/2 + 3 + N/4 + 3
+		self.spdf_delay = N // 2 + 3 + N // 4 + 3
 		self.imports = ['twiddleAddrGen', 'fft_spdf_stage']
 		
 		if N > 32:
@@ -641,7 +641,7 @@ class FFTSPDF:
 		return d
 	
 	def inputBitOrder(self):
-		return range(0, myLog2(self.N))
+		return list(range(0, myLog2(self.N)))
 
 	def outputBitOrder(self):
 		O1 = myLog2(self.sub1.N)
@@ -674,7 +674,7 @@ class FFTSPDF:
 					'delay', self.delay(),
 					subId1 + 'dataBits', id + 'dataBitsIntern']
 		constants = ''
-		for i in xrange(0, len(constantsArr), 2):
+		for i in range(0, len(constantsArr), 2):
 			name = constantsArr[i]
 			val = str(constantsArr[i+1])
 			constants += 'constant %s%s: integer := %s;\n' % (id, name,val)
@@ -866,4 +866,3 @@ begin
 end ar;
 '''
 		return code
-

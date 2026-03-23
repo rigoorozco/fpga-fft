@@ -169,10 +169,10 @@ def genReorderer(fft, isOutput, rows, entityName):
 	dataOrder = None
 	if isOutput:
 		fftDataOrder = fft.outputBitOrder()
-		dataOrder = [x+rowBits for x in fftDataOrder] + range(0, rowBits)
+		dataOrder = [x+rowBits for x in fftDataOrder] + list(range(0, rowBits))
 	else:
 		fftDataOrder = fft.inputBitOrder()
-		dataOrder = range(colBits, colBits+rowBits) + fftDataOrder
+		dataOrder = list(range(colBits, colBits+rowBits)) + fftDataOrder
 	
 	perm = BitPermutation(dataOrder)
 	
@@ -428,4 +428,3 @@ begin
 end ar;
 '''.format(**locals())
 	return code
-

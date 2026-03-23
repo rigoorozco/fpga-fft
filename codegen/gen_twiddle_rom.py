@@ -1,76 +1,78 @@
-#!/usr/bin/python
-from math import *
+#!/usr/bin/env python3
+from math import cos, sin, log, ceil, pi
 import sys
 
-# generates a twiddle rom of SIZE depth supporting the specified widths
 
-if len(sys.argv) < 3:
-	print 'usage: %s SIZE WIDTH0 [WIDTH1...]' % sys.argv[0]
-	exit(1)
+def usage() -> None:
+    print(f"usage: {sys.argv[0]} SIZE WIDTH0 [WIDTH1...]")
 
-N = int(sys.argv[1]);
-widths = [int(x) for x in sys.argv[2:]];
 
-size = N/8;
-romDepthOrder = int(ceil(log(size)/log(2.)));
-useLUTRAM = (romDepthOrder <= 5)
-useBlockRAM = (romDepthOrder >= 8)
+def format_rom_entries(n: int, size: int, tw_bits: int) -> str:
+    rom_width = tw_bits - 1
+    scale = 2 ** rom_width
+    fmt = "{0:0" + str(rom_width) + "b}"
 
-name = 'twiddleRom'+str(N)
+    entries = []
+    for i in range(size):
+        x = float(i + 1) / n * (2 * pi)
+        re1 = int(round(cos(x) * scale))
+        im1 = int(round(sin(x) * scale))
+        if re1 >= scale:
+            re1 = scale - 1
+        if im1 >= scale:
+            im1 = scale - 1
+        entries.append(f"\"{fmt.format(im1)}{fmt.format(re1)}\"")
 
-extraCode = ''
-if useLUTRAM:
-	extraCode = '''
+    lines = []
+    for i in range(0, len(entries), 6):
+        lines.append("\t\t\t" + ", ".join(entries[i:i + 6]))
+    return ",\n".join(lines)
+
+
+def main() -> int:
+    if len(sys.argv) < 3:
+        usage()
+        return 1
+
+    n = int(sys.argv[1])
+    widths = [int(x) for x in sys.argv[2:]]
+
+    size = n // 8
+    rom_depth_order = int(ceil(log(size) / log(2.0)))
+    use_lutram = rom_depth_order <= 5
+    use_blockram = rom_depth_order >= 8
+    name = "twiddleRom" + str(n)
+
+    extra_code = ""
+    if use_lutram:
+        extra_code = """
 	attribute rom_style: string;
 	attribute rom_style of data0: signal is "distributed";
-	attribute rom_style of addr1: signal is "distributed";'''
-
-if useBlockRAM:
-	extraCode = '''
+	attribute rom_style of addr1: signal is "distributed";"""
+    if use_blockram:
+        extra_code = """
 	attribute rom_style: string;
 	attribute rom_style of data0: signal is "block";
-	attribute rom_style of addr1: signal is "block";'''
+	attribute rom_style of addr1: signal is "block";"""
 
-def printROM(twBits):
-	romWidth = (twBits - 1)
-	scale = (2**romWidth)
-	fmt = '{0:0' + str(romWidth) + 'b}'
-	for i in xrange(size):
-		x = float(i+1)/N * (2*pi)
-		re = cos(x)
-		im = sin(x)
-		
-		re1 = int(round(re*scale));
-		im1 = int(round(im*scale));
-		
-		if re1 >= scale: re1 = scale - 1
-		if im1 >= scale: im1 = scale - 1
-		
-		#assert re1 < scale;
-		#assert im1 < scale;
-		
-		
-		if i != 0:
-			print ',',
-		if i%6 == 0: print;
-		print '"' + fmt.format(im1) + fmt.format(re1) + '"', 
-
-print '''
+    out = []
+    out.append(
+        f"""
 library ieee;
 library work;
 use ieee.numeric_std.all;
 use ieee.std_logic_1164.all;
 -- read delay is 2 cycles
 
-entity {1:s} is
+entity {name} is
 	generic(twBits: integer := 17);
 	port(clk: in std_logic;
-			romAddr: in unsigned({0:d}-1 downto 0);
+			romAddr: in unsigned({rom_depth_order}-1 downto 0);
 			romData: out std_logic_vector((twBits-1)*2-1 downto 0)
 			);
 end entity;
-architecture a of {1:s} is
-	constant romDepthOrder: integer := {0:d};
+architecture a of {name} is
+	constant romDepthOrder: integer := {rom_depth_order};
 	constant romDepth: integer := 2**romDepthOrder;
 	constant romWidth: integer := (twBits-1)*2;
 	--ram
@@ -79,23 +81,35 @@ architecture a of {1:s} is
 	signal rom: ram1t;
 	signal addr1: unsigned(romDepthOrder-1 downto 0);
 	signal data0,data1: std_logic_vector(romWidth-1 downto 0);
-{2:s}
+{extra_code}
 begin
 	addr1 <= romAddr when rising_edge(clk);
 	data0 <= rom(to_integer(addr1));
 	data1 <= data0 when rising_edge(clk);
-	romData <= data1;'''.format(romDepthOrder, name, extraCode)
+	romData <= data1;"""
+    )
 
-for twBits in widths:
-	print '''
-g{twBits:d}:
-	if twBits = {twBits:d} generate
-		rom <= ('''.format(**locals()), 
-	printROM(twBits);
-	print ''');
-	end generate;'''
+    for tw_bits in widths:
+        rom = format_rom_entries(n, size, tw_bits)
+        out.append(
+            f"""
+g{tw_bits}:
+	if twBits = {tw_bits} generate
+		rom <= (
+{rom}
+		);
+	end generate;"""
+        )
 
-print;
-print '''
+    out.append(
+        """
 end a;
-'''
+"""
+    )
+
+    sys.stdout.write("".join(out))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

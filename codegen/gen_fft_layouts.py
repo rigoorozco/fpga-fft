@@ -87,6 +87,9 @@ fft4_fast_scale_div_sqrt_n = fft4_default_fast(scale=SCALE_DIV_SQRT_N)
 fft4_fast_scale_div_sqrt_n_bg1 = fft4_default_fast(scale=SCALE_DIV_SQRT_N, bitGrowth=1)
 fft4_fast_scale_div_n = fft4_default_fast(scale=SCALE_DIV_N)
 
+# Backward-compatible aliases used by existing layout definitions.
+fft4_large_scale_div_sqrt_n = fft4_fast_scale_div_sqrt_n
+
 fft2_default = fft2_serial
 fft2_scale_none = fft2_default(scale=SCALE_NONE)
 fft2_scale_none_bg1 = fft2_default(scale=SCALE_NONE, bitGrowth=1)
@@ -172,6 +175,21 @@ fft1024_wide = \
 			fft4_scale_div_n,
 			fft4_scale_div_n));
 fft1024_wide.setMultiplier(largeMult)
+
+
+fft2048_wide = \
+	FFT4Step(2048,
+		FFT4Step(64,
+			FFT4Step(16,
+				fft4_scale_none,
+				fft4_scale_none),
+			fft4_scale_none),
+		FFT4Step(32,
+			FFT4Step(8,
+				fft4_scale_div_n,
+				fft2_scale_div_n),
+			fft4_scale_div_n));
+fft2048_wide.setMultiplier(largeMult)
 
 
 fft1024_wide_unscaled = \
@@ -297,5 +315,3 @@ fft32k_wide = \
 			FFT4Step(8,  fft4_scale_div_n, fft2_scale_div_n)));
 
 fft32k_wide.setMultiplier(largeMult)
-
-
