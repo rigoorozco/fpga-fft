@@ -43,22 +43,22 @@ architecture ar of fft2048_wide_sub64 is
 
 	--=======================================
 
-	signal ph1, ph2, ph3: unsigned(order-1 downto 0);
-	signal rbIn, transpOut: complex;
-	signal bitPermIn,bitPermOut: unsigned(4-1 downto 0);
+	signal ph1, ph2, ph3: unsigned(order-1 downto 0) := (others => '0');
+	signal rbIn, transpOut: complex := to_complex(0, 0);
+	signal bitPermIn,bitPermOut: unsigned(4-1 downto 0) := (others => '0');
 
 	-- twiddle generator
-	signal twAddr: unsigned(order-1 downto 0);
-	signal twData: complex;
+	signal twAddr: unsigned(order-1 downto 0) := (others => '0');
+	signal twData: complex := to_complex(0, 0);
 
-	signal romAddr: unsigned(order-4 downto 0);
-	signal romData: std_logic_vector(twiddleBits*2-3 downto 0);
+	signal romAddr: unsigned(order-4 downto 0) := (others => '0');
+	signal romData: std_logic_vector(twiddleBits*2-3 downto 0) := (others => '0');
 
 begin
 	sub1din <= din;
 	sub1phase <= phase(4-1 downto 0);
 
-	ph1 <= phase-39+1 when rising_edge(clk);
+	ph1 <= phase + 26 when rising_edge(clk);
 
 	transp: entity transposer
 		generic map(N1=>2, N2=>4, dataBits=>dataBitsIntern)
@@ -86,7 +86,7 @@ begin
 					outBits=>dataBitsIntern)
 		port map(clk=>clk, in1=>twData, in2=>transpOut, out1=>sub2din);
 
-	ph3 <= ph2-9+1 when rising_edge(clk);
+	ph3 <= ph2 + 56 when rising_edge(clk);
 	sub2phase <= ph3(2-1 downto 0);
 	dout <= sub2dout;
 	bitPermOut <= bitPermIn(0)&bitPermIn(1)&bitPermIn(2)&bitPermIn(3);

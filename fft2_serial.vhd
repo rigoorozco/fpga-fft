@@ -25,21 +25,21 @@ entity fft2_serial is
 end entity;
 
 architecture ar of fft2_serial is
-	signal ph1: unsigned(0 downto 0);
-	signal shiftIn,fftIn_2Cycle,fftOut0,fftOut_2Cycle: complexArray(1 downto 0);
-	signal shiftOut,shiftOutNext: complexArray(1 downto 0);
+	signal ph1: unsigned(0 downto 0) := (others => '0');
+	signal shiftIn,fftIn_2Cycle,fftOut0,fftOut_2Cycle: complexArray(1 downto 0) := (others => to_complex(0, 0));
+	signal shiftOut,shiftOutNext: complexArray(1 downto 0) := (others => to_complex(0, 0));
 begin
 	shiftIn <= din & shiftIn(1 downto 1) when rising_edge(clk);
-	fftIn_2Cycle <= shiftIn when phase=0 and rising_edge(clk);
+	fftIn_2Cycle <= shiftIn when phase(0)='0' and rising_edge(clk);
 	-- 3 cycles
 	
 	fft1: entity fft2_noPipeline
 		generic map(dataBits=>dataBits, scale=>scale, round=>round)
 		port map(fftIn_2Cycle, fftOut0);
-	fftOut_2Cycle <= fftOut0 when phase=0 and rising_edge(clk);
+	fftOut_2Cycle <= fftOut0 when phase(0)='0' and rising_edge(clk);
 	-- 5 cycles
 	
-	shiftOutNext <= fftOut_2Cycle when phase=1 else
+	shiftOutNext <= fftOut_2Cycle when phase(0)='1' else
 					to_complex(0,0) & shiftOut(1 downto 1);
 	shiftOut <= shiftOutNext when rising_edge(clk);
 	-- 6 cycles

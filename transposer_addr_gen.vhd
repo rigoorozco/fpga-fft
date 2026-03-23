@@ -18,7 +18,7 @@ entity transposer_addrgen is
 		);
 end entity;
 architecture ar of transposer_addrGen is
-	signal ph1,ph2,ph3: unsigned(N1+N2-1 downto 0);
+	signal ph1,ph2,ph3: unsigned(N1+N2-1 downto 0) := (others => '0');
 	
 	constant use_stagedBarrelShifter: boolean := false;
 	constant stateCount: integer := N1+N2;
@@ -31,13 +31,40 @@ architecture ar of transposer_addrGen is
 	--attribute delay of ar:architecture is shifterMuxStages+1;
 	
 	signal state,stateNext: unsigned(stateBits-1 downto 0) := (others=>'0');
+
+	function is_clean_zero(v : unsigned) return boolean is
+	begin
+		for i in v'range loop
+			if v(i) /= '0' then
+				return false;
+			end if;
+		end loop;
+		return true;
+	end function;
+
+	function add_mod_clean(cur : unsigned; step, modulus : natural) return unsigned is
+		variable cur_i  : natural;
+		variable next_i : natural;
+	begin
+		for i in cur'range loop
+			if cur(i) /= '0' and cur(i) /= '1' then
+				return to_unsigned(0, cur'length);
+			end if;
+		end loop;
+		cur_i := to_integer(cur);
+		next_i := cur_i + step;
+		if next_i >= modulus then
+			next_i := next_i - modulus;
+		end if;
+		return to_unsigned(next_i, cur'length);
+	end function;
 begin
 	ph1 <= phase+phaseAdvance+delay when rising_edge(clk);
 	-- 1 cycle
 	
 	ph2 <= ph1 when rising_edge(clk);
-	stateNext <= state+N2-stateCount when state>=(stateCount-N2) else state+N2;
-	state <= stateNext when ph1=0 and reorderEnable='1' and rising_edge(clk);
+	stateNext <= add_mod_clean(state, N2, stateCount);
+	state <= stateNext when is_clean_zero(ph1) and reorderEnable='1' and rising_edge(clk);
 	-- 2 cycles
 	
 --g1:

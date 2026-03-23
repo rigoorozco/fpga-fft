@@ -40,8 +40,8 @@ entity reorderBuffer is
 		);
 end entity;
 architecture ar of reorderBuffer is
-	signal din2,dout0: complex;
-	signal iaddr, iaddr2, oaddr: unsigned(N-1 downto 0);
+	signal din2,dout0: complex := to_complex(0, 0);
+	signal iaddr, iaddr2, oaddr: unsigned(N-1 downto 0) := (others => '0');
 	constant extraRegister: boolean := (N) >= TRANSPOSER_OREG_THRESHOLD;
 	constant addrDelays: integer := 3+bitPermDelay;
 	constant totalDelays: integer := iif(extraRegister, 3, 2) + addrDelays;
@@ -51,7 +51,7 @@ architecture ar of reorderBuffer is
 	constant stateBits: integer := ceilLog2(stateCount);
 	
 	signal state,stateNext: unsigned(stateBits-1 downto 0) := (others=>'0');
-	signal ph1,ph2,ph3: unsigned(N-1 downto 0);
+	signal ph1,ph2,ph3: unsigned(N-1 downto 0) := (others => '0');
 begin
 	-- read side
 	ph1 <= phase+totalDelays-dataPathDelay when rising_edge(clk);

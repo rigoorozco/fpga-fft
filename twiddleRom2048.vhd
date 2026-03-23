@@ -19,9 +19,9 @@ architecture a of twiddleRom2048 is
 	--ram
 	type ram1t is array(0 to romDepth-1) of
 		std_logic_vector(romWidth-1 downto 0);
-	signal rom: ram1t;
-	signal addr1: unsigned(romDepthOrder-1 downto 0);
-	signal data0,data1: std_logic_vector(romWidth-1 downto 0);
+	signal rom: ram1t := (others => (others => '0'));
+	signal addr1: unsigned(romDepthOrder-1 downto 0) := (others => '0');
+	signal data0,data1: std_logic_vector(romWidth-1 downto 0) := (others => '0');
 
 	attribute rom_style: string;
 	attribute rom_style of data0: signal is "block";

@@ -36,14 +36,34 @@ architecture a of twiddleGenerator is
 	
 	constant one: integer := iif(reducedBits, (2**(twiddleBits-1))-1, (2**(twiddleBits-1)));
 	
-	signal romData1: std_logic_vector(twiddleBits*2-3 downto 0);
+	signal romData1: std_logic_vector(twiddleBits*2-3 downto 0) := (others => '0');
 	signal romAddr0,romAddrNext: unsigned(romDepthOrder-1 downto 0) := (others=>'0');
 	signal phase,phase1,phase2,phase3: unsigned(depthOrder-1 downto 0) := (others=>'0');
 	signal ph3,ph4: unsigned(2 downto 0) := (others=>'0');
-	signal isZero,isZeroNext: std_logic;
+	signal isZero,isZeroNext: std_logic := '1';
 	
-	signal re,im,re0,im0, re_P, re_M, im_P, im_M: integer;
-	signal outData, outData0: complex;
+	signal re,im,re0,im0, re_P, re_M, im_P, im_M: integer := 0;
+	signal outData, outData0: complex := to_complex(0, 0);
+
+	function is_clean_zero(v : unsigned) return boolean is
+	begin
+		for i in v'range loop
+			if v(i) /= '0' then
+				return false;
+			end if;
+		end loop;
+		return true;
+	end function;
+
+	function is_clean_eq_nat(v : unsigned; n : natural) return boolean is
+	begin
+		for i in v'range loop
+			if v(i) /= '0' and v(i) /= '1' then
+				return false;
+			end if;
+		end loop;
+		return v = to_unsigned(n, v'length);
+	end function;
 	
 	attribute keep: string;
 	attribute keep of outData: signal is "true";
@@ -60,7 +80,7 @@ begin
 	sr: entity sr_unsigned generic map(depthOrder, romDelay)
 		port map(clk, phase, phase1);
 	phase2 <= phase1 when rising_edge(clk);
-	isZeroNext <= '1' when phase1(depthOrder-3 downto 0)=0 else '0';
+	isZeroNext <= '1' when is_clean_zero(phase1(depthOrder-3 downto 0)) else '0';
 	isZero <= isZeroNext when rising_edge(clk);
 	romData1 <= romData when rising_edge(clk);
 	-- 2+romDelay cycles; isZero is aligned with phase2 and romData1
@@ -83,23 +103,23 @@ begin
 	-- 4+romDelay cycles
 
 g1: if not inverse generate
-		outData0 <= to_complex(re_P,im_M)	when ph4=0 else
-					to_complex(im_P,re_M)	when ph4=1 else
-					to_complex(im_M,re_M)	when ph4=2 else
-					to_complex(re_M,im_M)	when ph4=3 else
-					to_complex(re_M,im_P)	when ph4=4 else
-					to_complex(im_M,re_P)	when ph4=5 else
-					to_complex(im_P,re_P)	when ph4=6 else
+		outData0 <= to_complex(re_P,im_M)	when is_clean_eq_nat(ph4, 0) else
+					to_complex(im_P,re_M)	when is_clean_eq_nat(ph4, 1) else
+					to_complex(im_M,re_M)	when is_clean_eq_nat(ph4, 2) else
+					to_complex(re_M,im_M)	when is_clean_eq_nat(ph4, 3) else
+					to_complex(re_M,im_P)	when is_clean_eq_nat(ph4, 4) else
+					to_complex(im_M,re_P)	when is_clean_eq_nat(ph4, 5) else
+					to_complex(im_P,re_P)	when is_clean_eq_nat(ph4, 6) else
 					to_complex(re_P,im_P); --when ph4=7;
 	end generate;
 g2: if inverse generate
-		outData0 <= to_complex(re_P,im_P)	when ph4=0 else
-					to_complex(im_P,re_P)	when ph4=1 else
-					to_complex(im_M,re_P)	when ph4=2 else
-					to_complex(re_M,im_P)	when ph4=3 else
-					to_complex(re_M,im_M)	when ph4=4 else
-					to_complex(im_M,re_M)	when ph4=5 else
-					to_complex(im_P,re_M)	when ph4=6 else
+		outData0 <= to_complex(re_P,im_P)	when is_clean_eq_nat(ph4, 0) else
+					to_complex(im_P,re_P)	when is_clean_eq_nat(ph4, 1) else
+					to_complex(im_M,re_P)	when is_clean_eq_nat(ph4, 2) else
+					to_complex(re_M,im_P)	when is_clean_eq_nat(ph4, 3) else
+					to_complex(re_M,im_M)	when is_clean_eq_nat(ph4, 4) else
+					to_complex(im_M,re_M)	when is_clean_eq_nat(ph4, 5) else
+					to_complex(im_P,re_M)	when is_clean_eq_nat(ph4, 6) else
 					to_complex(re_P,im_M); --when ph4=7;
 	end generate;
 

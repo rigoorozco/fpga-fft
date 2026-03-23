@@ -36,13 +36,23 @@ architecture a of complexRamLUT is
 	--ram
 	type ram1t is array(depth-1 downto 0) of
 		std_logic_vector(width-1 downto 0);
-	signal ram1: ram1t; -- := (others=>(others=>'0'));
+	signal ram1: ram1t := (others => (others => '0'));
 	
-	signal rdaddr1: unsigned(depthOrder-1 downto 0);
-	signal wrdata1: std_logic_vector(width-1 downto 0);
+	signal rdaddr1: unsigned(depthOrder-1 downto 0) := (others => '0');
+	signal wrdata1: std_logic_vector(width-1 downto 0) := (others => '0');
 	
-	signal tmpdata: std_logic_vector(width-1 downto 0);
+	signal tmpdata: std_logic_vector(width-1 downto 0) := (others => '0');
 	signal tmpdata1,tmpdata2: signed(dataBits-1 downto 0) := (others=>'0');
+
+	function to_integer_clean(v : unsigned) return integer is
+	begin
+		for i in v'range loop
+			if v(i) /= '0' and v(i) /= '1' then
+				return 0;
+			end if;
+		end loop;
+		return to_integer(v);
+	end function;
 	
 	attribute ram_style: string;
 	attribute ram_style of ram1: signal is "distributed";
@@ -55,7 +65,7 @@ begin
 	
 	-- TODO: we are assuming this infers a register on the address side (rather than output side);
 	-- this is true on xilinx but we should verify it on other vendor tools as well.
-	tmpdata <= ram1(to_integer(rdaddr1));
+	tmpdata <= ram1(to_integer_clean(rdaddr1));
 	
 	tmpdata1 <= signed(tmpdata(dataBits-1 downto 0)) when rising_edge(rdclk);
 	tmpdata2 <= signed(tmpdata(width-1 downto dataBits)) when rising_edge(rdclk);
@@ -70,7 +80,7 @@ begin
 	begin
 		 if(rising_edge(wrclk)) then
 			  if(wren='1') then
-					ram1(to_integer(wraddr)) <= wrdata1;
+					ram1(to_integer_clean(wraddr)) <= wrdata1;
 			  end if;
 		 end if;
 	end process;

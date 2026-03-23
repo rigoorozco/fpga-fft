@@ -27,13 +27,23 @@ architecture a of complexRam is
 	--ram
 	type ram1t is array(depth-1 downto 0) of
 		std_logic_vector(width-1 downto 0);
-	signal ram1: ram1t; -- := (others=>(others=>'0'));
+	signal ram1: ram1t := (others => (others => '0'));
 	
-	signal rdaddr1: unsigned(depthOrder-1 downto 0);
-	signal wrdata1: std_logic_vector(width-1 downto 0);
+	signal rdaddr1: unsigned(depthOrder-1 downto 0) := (others => '0');
+	signal wrdata1: std_logic_vector(width-1 downto 0) := (others => '0');
 	
-	signal tmpdata: std_logic_vector(width-1 downto 0);
-	signal tmpdata1,tmpdata2: signed(dataBits-1 downto 0);
+	signal tmpdata: std_logic_vector(width-1 downto 0) := (others => '0');
+	signal tmpdata1,tmpdata2: signed(dataBits-1 downto 0) := (others => '0');
+
+	function to_integer_clean(v : unsigned) return integer is
+	begin
+		for i in v'range loop
+			if v(i) /= '0' and v(i) /= '1' then
+				return 0;
+			end if;
+		end loop;
+		return to_integer(v);
+	end function;
 begin
 	--inferred ram
 	rdaddr1 <= rdaddr; -- when rising_edge(rdclk);
@@ -43,7 +53,7 @@ begin
 	process(rdclk)
 	begin
 		 if(rising_edge(rdclk)) then
-				tmpdata <= ram1(to_integer(rdaddr1));
+				tmpdata <= ram1(to_integer_clean(rdaddr1));
 		 end if;
 	end process;
 	
@@ -60,7 +70,7 @@ begin
 	begin
 		 if(rising_edge(wrclk)) then
 			  if(wren='1') then
-					ram1(to_integer(wraddr)) <= wrdata1;
+					ram1(to_integer_clean(wraddr)) <= wrdata1;
 			  end if;
 		 end if;
 	end process;

@@ -22,20 +22,20 @@ entity fft2048_wide_wrapper1 is
 		);
 end entity;
 architecture ar of fft2048_wide_wrapper1 is
-	signal core_din, core_dout: complex;
-	signal core_phase: unsigned(11-1 downto 0);
-	signal oreorderer_phase: unsigned(11-1 downto 0);
+	signal core_din, core_dout: complex := to_complex(0, 0);
+	signal core_phase: unsigned(11-1 downto 0) := (others => '0');
+	signal oreorderer_phase: unsigned(11-1 downto 0) := (others => '0');
 begin
 
 	ireorder: entity fft2048_wide_ireorderer1 generic map(dataBits=>dataBits)
 		port map(clk=>clk, phase=>phase, din=>din, dout=>core_din);
 
-	core_phase <= phase - 2048 + 1 when rising_edge(clk);
+	core_phase <= phase + 1 when rising_edge(clk);
 
 	core: entity fft2048_wide generic map(dataBits=>dataBits, twBits=>twBits, inverse=>inverse)
 		port map(clk=>clk, phase=>core_phase(11-1 downto 0), din=>core_din, dout=>core_dout);
 	
-	oreorderer_phase <= core_phase - 2286 + 1 when rising_edge(clk);
+	oreorderer_phase <= core_phase + 1811 when rising_edge(clk);
 	
 	oreorderer: entity fft2048_wide_oreorderer1 generic map(dataBits=>dataBits)
 		port map(clk=>clk, phase=>oreorderer_phase, din=>core_dout, dout=>dout);
