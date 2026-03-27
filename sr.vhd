@@ -15,7 +15,7 @@ end sr;
 
 architecture a of sr is
 	type arr_t is array(len downto 0) of std_logic_vector(bits-1 downto 0);
-	signal arr: arr_t;
+	signal arr: arr_t := (others => (others => '0'));
 begin
 g:	for I in 0 to len-1 generate
 		arr(I) <= arr(I+1) when ce='1' and rising_edge(clk);
@@ -40,7 +40,7 @@ end;
 
 architecture a of sr_unsigned is
 	type arr_t is array(len downto 0) of unsigned(bits-1 downto 0);
-	signal arr: arr_t;
+	signal arr: arr_t := (others => (others => '0'));
 begin
 g:	for I in 0 to len-1 generate
 		arr(I) <= arr(I+1) when ce='1' and rising_edge(clk);
@@ -65,7 +65,7 @@ end;
 
 architecture a of sr_signed is
 	type arr_t is array(len downto 0) of signed(bits-1 downto 0);
-	signal arr: arr_t;
+	signal arr: arr_t := (others => (others => '0'));
 begin
 g:	for I in 0 to len-1 generate
 		arr(I) <= arr(I+1) when ce='1' and rising_edge(clk);
@@ -87,7 +87,7 @@ entity sr_bit is
 end;
 
 architecture a of sr_bit is
-	signal arr: std_logic_vector(len downto 0);
+	signal arr: std_logic_vector(len downto 0) := (others => '0');
 begin
 g:	for I in 0 to len-1 generate
 		arr(I) <= arr(I+1) when ce='1' and rising_edge(clk);
