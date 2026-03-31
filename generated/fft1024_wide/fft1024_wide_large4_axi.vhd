@@ -9,7 +9,7 @@ use work.axiBlockProcessorAdapter2;
 use work.fft1024_wide_large4;
 
 entity fft1024_wide_large4_axi is
-	generic(dataBits: integer := 32; twBits: integer := 24);
+	generic(dataBits: integer := 32; twBits: integer := 24; inverse: boolean := true);
 	port(aclk, aclk_unbuffered, reset: in std_logic;
 		din_tvalid: in std_logic;
 		din_tready: out std_logic;
@@ -69,7 +69,7 @@ begin
 	inFlags1 <= inFlags when gated_inphase=(2**(gated_inphase'length) - 20) and rising_edge(fftClk_gated);
 
 	fft: entity fft1024_wide_large4
-		generic map(dataBits=>dataBits, twBits=>twBits)
+		generic map(dataBits=>dataBits, twBits=>twBits, inverse=>inverse)
 		port map(clk=>fftClk_gated, din=>gated_din,
 				twMultEnable=>inFlags1(2),
 				inTranspose=>'0', outTranspose=>'1',

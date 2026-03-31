@@ -11,6 +11,7 @@ use work.fft1024_wide_large2;
 entity fft1024_wide_large2axi is
 	generic(dataBits: integer := 32;
 			twBits: integer := 24;
+			inverse: boolean := true;
 			tuserWidth: integer := 7;
 			twMultFlagNum: integer := AXIFFT_FLAG_TWIDDLE_MULTIPLY;
 			ibTransposeFlagNum: integer := AXIFFT_FLAG_INPUT_BURST_TRANSPOSE;
@@ -93,7 +94,7 @@ begin
 	dout_tuser <= inFlags2 when rising_edge(fftClk_gated);
 
 	fft: entity fft1024_wide_large2
-		generic map(dataBits=>dataBits, twBits=>twBits)
+		generic map(dataBits=>dataBits, twBits=>twBits, inverse=>inverse)
 		port map(clk=>fftClk_gated, din=>gated_din,
 				twMultEnable=>inFlags2(twMultFlagNum),
 				inTranspose=>inFlags2(ibTransposeFlagNum),

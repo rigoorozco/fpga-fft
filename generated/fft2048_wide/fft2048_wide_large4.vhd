@@ -19,7 +19,7 @@ use work.dsp48e1_complexMultiply;
 -- twMultEnable enables the twiddle pre-multiply.
 -- inTranspose and outTranspose enable the input/output burst transposers.
 entity fft2048_wide_large4 is
-	generic(dataBits: integer := 24; twBits: integer := 12);
+	generic(dataBits: integer := 24; twBits: integer := 12; inverse: boolean := true);
 	port(clk: in std_logic;
 		din: in complex;
 		phase: in unsigned(22-1 downto 0);
@@ -29,7 +29,7 @@ end entity;
 architecture ar of fft2048_wide_large4 is
 	signal din1: complex;
 	signal ph: unsigned(22-1 downto 0);
-	signal ibreorder_dout, twMult_dout, ireorder_dout, core_dout, oreorder_dout, obreorder_dout, twOut: complex;
+	signal ibreorder_dout, twMult_dout, ireorder_dout, core_dout, oreorder_dout, obreorder_dout, twOut, twOutRaw: complex;
 	signal ibreorder_phase, tw_phase, ireorder_phase, core_phase, oreorder_phase, obreorder_phase: unsigned(22-1 downto 0);
 	signal twX, twY, twX1, twY1: unsigned(11-1 downto 0);
 	signal twFineY, twFineY1: unsigned(2-1 downto 0);
@@ -95,7 +95,7 @@ begin
 		port map(clk=>clk, din=>twAddrLower0, dout=>twAddrLower);
 
 	twUpper: entity twiddleGenerator
-		generic map(twiddleBits=>twBits, depthOrder=>twAddrUpper'length)
+		generic map(twiddleBits=>twBits, depthOrder=>twAddrUpper'length, inverse=>true)
 		port map(clk=>clk, rdAddr=>twAddrUpper, rdData=>twDataUpper,
 				romAddr=>romAddrUpper, romData=>romDataUpper);
 	romUpper: entity twiddleRom4096
@@ -109,7 +109,10 @@ begin
 	twGenMult: entity dsp48e1_complexMultiply
 		generic map(in1Bits=>twBits+1, in2Bits=>twBits+1,
 					outBits=>twBits+1, round=>true)
-		port map(clk=>clk, in1=>twDataUpper, in2=>twDataLower, out1=>twOut);
+		port map(clk=>clk, in1=>twDataUpper, in2=>twDataLower, out1=>twOutRaw);
+
+	twOut <= twOutRaw when inverse else
+			to_complex(twOutRaw.re, -twOutRaw.im);
 
 
 	twMult: entity dsp48e1_complexMultiply
@@ -124,7 +127,7 @@ begin
 				dout=>ireorder_dout);
 
 	core: entity fft2048_wide
-		generic map(dataBits=>dataBits, twBits=>twBits)
+		generic map(dataBits=>dataBits, twBits=>twBits, inverse=>inverse)
 		port map(clk=>clk,
 				phase=>core_phase(11-1 downto 0),
 				din=>ireorder_dout, dout=>core_dout);
