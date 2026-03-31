@@ -16,13 +16,14 @@ architecture behaviour of test_reorderBuffer is
 	signal din: complex;
 	signal phase: unsigned(3 downto 0);
 	signal dout: complex;
+	signal dout_phase: unsigned(3 downto 0);
 	
 	signal bitPermIn: unsigned(3 downto 0);
 	signal bitPermCount: unsigned(1 downto 0);
 	signal bitPermOut: unsigned(3 downto 0);
 begin
 	rb: entity reorderBuffer generic map(4, 24, 0)
-		port map(clk, din, phase, dout,
+		port map(clk, din, phase, dout, dout_phase,
 				bitPermIn, bitPermCount, bitPermOut);
 	
 	bitPermOut <= rotate_left(bitPermIn, to_integer(bitPermCount));

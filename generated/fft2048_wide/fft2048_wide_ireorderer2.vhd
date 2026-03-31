@@ -28,7 +28,7 @@ begin
 	rb: entity reorderBuffer
 		generic map(N=>12, dataBits=>dataBits, repPeriod=>4, bitPermDelay=>0, dataPathDelay=>0)
 		port map(clk=>clk, din=>din, phase=>phase, dout=>dout,
-			bitPermIn=>rP0, bitPermCount=>rCnt, bitPermOut=>rP2);
+			bitPermIn=>rP0, bitPermCount=>rCnt, bitPermOut=>rP2, doutPhase=>open);
 	rP1 <= rP0(0)&rP0(1)&rP0(2)&rP0(3)&rP0(4)&rP0(5)&rP0(10)&rP0(9)&rP0(8)&rP0(7)&rP0(6)&rP0(11) when rCnt(0)='1' else rP0;
 	rP2 <= rP1(11)&rP1(6)&rP1(7)&rP1(8)&rP1(9)&rP1(10)&rP1(1)&rP1(2)&rP1(3)&rP1(4)&rP1(5)&rP1(0) when rCnt(1)='1' else rP1;
 

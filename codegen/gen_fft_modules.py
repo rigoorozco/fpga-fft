@@ -503,7 +503,7 @@ signal {0:s}rbInPhase: unsigned({2:d}-1 downto 0);
 {0:s}rb: entity reorderBuffer
 	generic map(N=>{1:d}, dataBits=>{0:s}dataBitsIntern, repPeriod=>{7:d}, bitPermDelay=>0, dataPathDelay=>{6:d})
 	port map(clk, din=>{0:s}rbIn, phase=>{0:s}rbInPhase, dout=>{5:s}din,
-		bitPermIn=>{2:s}, bitPermCount=>{3:s}, bitPermOut=>{4:s});
+		bitPermIn=>{2:s}, bitPermCount=>{3:s}, bitPermOut=>{4:s}, doutPhase=>open);
 	
 {5:s}phase <= {0:s}rbInPhase-{6:d};
 	
@@ -799,7 +799,7 @@ signal {0:s}rbInPhase: unsigned({1:d}-1 downto 0);
 {0:s}rb: entity reorderBuffer
 	generic map(N=>{1:d}, dataBits=>{0:s}dataBitsIntern, repPeriod=>{7:d}, bitPermDelay=>0, dataPathDelay=>{6:d})
 	port map(clk, din=>{0:s}rbIn, phase=>{0:s}rbInPhase, dout=>{5:s}din,
-		bitPermIn=>{2:s}, bitPermCount=>{3:s}, bitPermOut=>{4:s});
+		bitPermIn=>{2:s}, bitPermCount=>{3:s}, bitPermOut=>{4:s}, doutPhase=>open);
 
 {5:s}phase <= {0:s}rbInPhase-{6:d};
 

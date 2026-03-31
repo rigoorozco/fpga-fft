@@ -201,12 +201,18 @@ entity {1:s} is
 	port(clk: in std_logic;
 		din: in complex;
 		phase: in unsigned({2:d}-1 downto 0);
-		dout: out complex
+		dout: out complex'''.format(*params)
+	if isOutput:
+		code += ''';
+		dout_phase: out unsigned({0:d}-1 downto 0)'''.format(totalBits)
+	code += '''
 		);
 end entity;
 architecture ar of {1:s} is
 '''.format(*params)
-	
+	if isOutput:
+		code += '\tsignal rb_dout_phase: unsigned({0:d}-1 downto 0);\n'.format(totalBits)
+
 	code += indent(perm.genDeclarations(''), 1)
 	code += indent(perm.genConstants(''), 1)
 	
@@ -220,9 +226,16 @@ begin
 	rb: entity reorderBuffer
 		generic map(N=>{0:d}, dataBits=>dataBits, repPeriod=>{4:d}, bitPermDelay=>0, dataPathDelay=>0)
 		port map(clk=>clk, din=>din, phase=>phase, dout=>dout,
-			bitPermIn=>{1:s}, bitPermCount=>{2:s}, bitPermOut=>{3:s});
+			bitPermIn=>{1:s}, bitPermCount=>{2:s}, bitPermOut=>{3:s}, doutPhase=>'''.format(*params)
+	if isOutput:
+		code += 'rb_dout_phase'
+	else:
+		code += 'open'
+	code += ''');
 '''.format(*params)
 	code += indent(perm.genBody(''), 1)
+	if isOutput:
+		code += '\n\tdout_phase <= rb_dout_phase;\n'
 	code += '''
 end ar;
 '''
@@ -269,13 +282,15 @@ entity {1:s} is
 	port(clk: in std_logic;
 		din: in complex;
 		phase: in unsigned({2:d}-1 downto 0);
-		dout: out complex
+		dout: out complex;
+		dout_phase: out unsigned({2:d}-1 downto 0)
 		);
 end entity;
 architecture ar of {1:s} is
 	signal core_din, core_dout: complex;
 	signal core_phase: unsigned({2:d}-1 downto 0);
 	signal oreorderer_phase: unsigned({2:d}-1 downto 0);
+	signal oreorderer_dout_phase: unsigned({2:d}-1 downto 0);
 begin
 '''.format(*params)
 
@@ -301,7 +316,9 @@ begin
 	oreorderer_phase <= core_phase - {4:d} + 1 when rising_edge(clk);
 	
 	oreorderer: entity {0:s}_oreorderer{1:d} generic map(dataBits=>dataBits)
-		port map(clk=>clk, phase=>oreorderer_phase, din=>core_dout, dout=>dout);
+		port map(clk=>clk, phase=>oreorderer_phase, din=>core_dout, dout=>dout, dout_phase=>oreorderer_dout_phase);
+
+	dout_phase <= oreorderer_dout_phase;
 end ar;
 '''.format(*params)
 	return code

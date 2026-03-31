@@ -32,6 +32,7 @@ entity reorderBuffer is
 		din: in complex;
 		phase: in unsigned(N-1 downto 0);
 		dout: out complex;
+		doutPhase: out unsigned(N-1 downto 0);
 		
 		-- external bit permutor
 		bitPermIn: out unsigned(N-1 downto 0);
@@ -42,6 +43,7 @@ end entity;
 architecture ar of reorderBuffer is
 	signal din2,dout0: complex := to_complex(0, 0);
 	signal iaddr, iaddr2, oaddr: unsigned(N-1 downto 0) := (others => '0');
+	signal oaddr_d1, oaddr_d2, oaddr_d3: unsigned(N-1 downto 0) := (others => '0');
 	constant extraRegister: boolean := (N) >= TRANSPOSER_OREG_THRESHOLD;
 	constant addrDelays: integer := 3+bitPermDelay;
 	constant totalDelays: integer := iif(extraRegister, 3, 2) + addrDelays;
@@ -69,7 +71,7 @@ begin
 	-- 3+bitPermDelay cycles
 	
 	
-g3: if useLUTRam generate
+	g3: if useLUTRam generate
 		ram: entity complexRamLUT generic map(dataBits, N)
 			port map(clk, clk, oaddr, dout0, '1', iaddr2, din2);
 	end generate;
@@ -82,12 +84,18 @@ g4: if not useLUTRam generate
 	-- addrDelays+2 cycles
 g1: if extraRegister generate
 		dout <= dout0 when rising_edge(clk);
+		doutPhase <= oaddr_d3;
 		-- addrDelays+3 cycles
 	end generate;
 g2: if not extraRegister generate
 		dout <= dout0;
+		doutPhase <= oaddr_d2;
 		-- addrDelays+2 cycles
 	end generate;
+	
+	oaddr_d1 <= oaddr when rising_edge(clk);
+	oaddr_d2 <= oaddr_d1 when rising_edge(clk);
+	oaddr_d3 <= oaddr_d2 when rising_edge(clk);
 	
 	
 	-- write side

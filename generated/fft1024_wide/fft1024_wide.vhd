@@ -120,7 +120,7 @@ begin
 	rb: entity reorderBuffer
 		generic map(N=>4, dataBits=>dataBitsIntern, repPeriod=>2, bitPermDelay=>0, dataPathDelay=>0)
 		port map(clk, din=>rbIn, phase=>rbInPhase, dout=>sub2din,
-			bitPermIn=>rP0, bitPermCount=>rCnt, bitPermOut=>rP1);
+			bitPermIn=>rP0, bitPermCount=>rCnt, bitPermOut=>rP1, doutPhase=>open);
 
 	sub2phase <= rbInPhase-0;
 	sub1: entity fft1024_wide_sub64 generic map(dataBits=>sub1dataBits, twBits=>twBits, inverse=>inverse)
