@@ -5,6 +5,7 @@ use ieee.numeric_std.all;
 use ieee.std_logic_1164.all;
 use work.fft_types.all;
 use work.reorderBuffer;
+use work.sr_unsigned;
 
 -- phase should be 0,1,2,3,4,5,6,...
 -- delay is 2048
@@ -19,10 +20,13 @@ entity fft2048_wide_oreorderer1 is
 		);
 end entity;
 architecture ar of fft2048_wide_oreorderer1 is
+	signal rb_dout_phase: unsigned(11-1 downto 0);
+	signal rCnt_phase_s: unsigned(1-1 downto 0);
+	signal phase_oreorder: unsigned(11-1 downto 0);
+	signal phase_fix0: unsigned(11-1 downto 0);
 	signal rP0: unsigned(11-1 downto 0);
 	signal rP1: unsigned(11-1 downto 0);
 	signal rCnt: unsigned(1-1 downto 0);
-	signal rb_dout_phase: unsigned(11-1 downto 0);
 
 
 begin
@@ -31,6 +35,15 @@ begin
 		port map(clk=>clk, din=>din, phase=>phase, dout=>dout,
 			bitPermIn=>rP0, bitPermCount=>rCnt, bitPermOut=>rP1, doutPhase=>rb_dout_phase);
 	rP1 <= rP0(0)&rP0(1)&rP0(2)&rP0(3)&rP0(4)&rP0(5)&rP0(6)&rP0(7)&rP0(8)&rP0(9)&rP0(10) when rCnt(0)='1' else rP0;
-	dout_phase <= rb_dout_phase;
+
+
+	phase_cnt_align: entity work.sr_unsigned
+		generic map(bits=>1, len=>iif(11 >= TRANSPOSER_OREG_THRESHOLD, 3, 2))
+		port map(clk=>clk, din=>rCnt, dout=>rCnt_phase_s, ce=>'1');
+
+		phase_fix0 <= rb_dout_phase;
+	phase_oreorder <= phase_fix0(0)&phase_fix0(1)&phase_fix0(2)&phase_fix0(3)&phase_fix0(4)&phase_fix0(5)&phase_fix0(6)&phase_fix0(7)&phase_fix0(8)&phase_fix0(9)&phase_fix0(10) when rCnt_phase_s(0)='1' else phase_fix0;
+
+	dout_phase <= phase_oreorder;
 
 end ar;

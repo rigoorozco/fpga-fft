@@ -187,6 +187,8 @@ use ieee.std_logic_1164.all;
 use work.fft_types.all;
 use work.reorderBuffer;
 '''
+	if isOutput:
+		code += 'use work.sr_unsigned;\n'
 	params = [
 			2**totalBits,
 			entityName,
@@ -212,6 +214,10 @@ architecture ar of {1:s} is
 '''.format(*params)
 	if isOutput:
 		code += '\tsignal rb_dout_phase: unsigned({0:d}-1 downto 0);\n'.format(totalBits)
+		code += '\tsignal rCnt_phase_s: unsigned({0:d}-1 downto 0);\n'.format(perm.stateBits)
+		code += '\tsignal phase_oreorder: unsigned({0:d}-1 downto 0);\n'.format(totalBits)
+		for i in range(perm.stateBits):
+			code += '\tsignal phase_fix{0:d}: unsigned({1:d}-1 downto 0);\n'.format(i, totalBits)
 
 	code += indent(perm.genDeclarations(''), 1)
 	code += indent(perm.genConstants(''), 1)
@@ -235,7 +241,44 @@ begin
 '''.format(*params)
 	code += indent(perm.genBody(''), 1)
 	if isOutput:
-		code += '\n\tdout_phase <= rb_dout_phase;\n'
+		# Align reorder state with rb_dout_phase (address to doutPhase is 2 or 3 cycles,
+		# depending on reorderBuffer output-register insertion).
+		code += '''
+
+	phase_cnt_align: entity work.sr_unsigned
+		generic map(bits=>{0:d}, len=>iif({1:d} >= TRANSPOSER_OREG_THRESHOLD, 3, 2))
+		port map(clk=>clk, din=>{2:s}, dout=>rCnt_phase_s, ce=>'1');
+
+		phase_fix0 <= rb_dout_phase;
+'''.format(perm.stateBits, totalBits, perm.sigCount(''))
+
+		stage_orders = []
+		b_order = list(dataOrder)
+		for _ in range(perm.stateBits):
+			stage_orders.append(list(b_order))
+			b_order = bitOrderNTimes(b_order, 2)
+
+		def invert_order(order):
+			inv = [0] * len(order)
+			for out_idx, src_idx in enumerate(order):
+				inv[src_idx] = out_idx
+			return inv
+
+		fix_idx = 0
+		for stage_idx in reversed(range(perm.stateBits)):
+			inv_order = invert_order(stage_orders[stage_idx])
+			src_sig = 'phase_fix{0:d}'.format(fix_idx)
+			if fix_idx + 1 < perm.stateBits:
+				dst_sig = 'phase_fix{0:d}'.format(fix_idx + 1)
+			else:
+				dst_sig = 'phase_oreorder'
+			inv_expr = bitOrderToVHDL(inv_order, src_sig)
+			code += "\t{0:s} <= {1:s} when rCnt_phase_s({2:d})='1' else {3:s};\n".format(
+				dst_sig, inv_expr, stage_idx, src_sig
+			)
+			fix_idx += 1
+
+		code += '\n\tdout_phase <= phase_oreorder;\n'
 	code += '''
 end ar;
 '''
