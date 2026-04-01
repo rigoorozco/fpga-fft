@@ -12,20 +12,20 @@ use work.fft2048_wide_ireorderer1;
 -- 1 interleaved channels, natural order
 -- phase should be 0,1,2,3,4,5,6,...
 -- din should be ch0d0, ch1d0, ch2d0, ch3d0, ch0d1, ch1d1, ... (if 4 channels)
--- delay is 6382
+-- delay is 6382 (forward) or 6139 (inverse)
 entity fft2048_wide_wrapper1 is
 	generic(dataBits: integer := 24; twBits: integer := 12; inverse: boolean := true);
 	port(clk: in std_logic;
-			din: in complex;
-			din_valid: in std_logic := '1';
-			phase: in unsigned(11-1 downto 0);
-			dout: out complex;
-			dout_valid: out std_logic;
-			dout_phase: out unsigned(11-1 downto 0)
-			);
+		din: in complex;
+		din_valid: in std_logic := '1';
+		phase: in unsigned(11-1 downto 0);
+		dout: out complex;
+		dout_valid: out std_logic;
+		dout_phase: out unsigned(11-1 downto 0)
+		);
 end entity;
 architecture ar of fft2048_wide_wrapper1 is
-	constant PIPELINE_DELAY_CYCLES: integer := 6382;
+	constant PIPELINE_DELAY_CYCLES: integer := iif(inverse, 6139, 6382);
 	signal core_din, core_dout: complex := to_complex(0, 0);
 	signal core_phase: unsigned(11-1 downto 0) := (others => '0');
 	signal oreorderer_phase: unsigned(11-1 downto 0) := (others => '0');

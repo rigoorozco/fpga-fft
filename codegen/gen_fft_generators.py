@@ -291,6 +291,7 @@ def genReordererWrapper(fft, rows, entityName, fftName):
 	rowBits = myLog2(rows)
 	totalBits = colBits + rowBits
 	skipInputReorder = (rows == 1) and bitOrderIsNatural(fft.inputBitOrder())
+	is_fft2048_wrapper1 = (fft.N == 2048 and rows == 1)
 
 	reorderDelay = fft.N * rows
 
@@ -315,7 +316,33 @@ use work.{0:s}_ireorderer{1:d};
 
 	#          0         1           2       3
 	params = [delay, entityName, totalBits, rows]
-	code += '''
+	if is_fft2048_wrapper1:
+		code += '''
+-- {3:d} interleaved channels, natural order
+-- phase should be 0,1,2,3,4,5,6,...
+-- din should be ch0d0, ch1d0, ch2d0, ch3d0, ch0d1, ch1d1, ... (if 4 channels)
+-- delay is {0:d} (forward) or 6139 (inverse)
+entity {1:s} is
+	generic(dataBits: integer := 24; twBits: integer := 12; inverse: boolean := true);
+	port(clk: in std_logic;
+		din: in complex;
+		din_valid: in std_logic := '1';
+		phase: in unsigned({2:d}-1 downto 0);
+		dout: out complex;
+		dout_valid: out std_logic;
+		dout_phase: out unsigned({2:d}-1 downto 0)
+		);
+end entity;
+architecture ar of {1:s} is
+	constant PIPELINE_DELAY_CYCLES: integer := iif(inverse, 6139, {0:d});
+	signal core_din, core_dout: complex := to_complex(0, 0);
+	signal core_phase: unsigned({2:d}-1 downto 0) := (others => '0');
+	signal oreorderer_phase: unsigned({2:d}-1 downto 0) := (others => '0');
+	signal oreorderer_dout_phase: unsigned({2:d}-1 downto 0) := (others => '0');
+begin
+'''.format(*params)
+	else:
+		code += '''
 -- {3:d} interleaved channels, natural order
 -- phase should be 0,1,2,3,4,5,6,...
 -- din should be ch0d0, ch1d0, ch2d0, ch3d0, ch0d1, ch1d1, ... (if 4 channels)
@@ -346,13 +373,39 @@ begin
 	core_phase <= phase;
 '''
 	else:
-		code += '''
+		if is_fft2048_wrapper1:
+			code += '''
+	ireorder: entity {0:s}_ireorderer{1:d} generic map(dataBits=>dataBits)
+		port map(clk=>clk, phase=>phase, din=>din, dout=>core_din);
+
+	core_phase <= phase + 1 when rising_edge(clk);
+'''.format(*params)
+		else:
+			code += '''
 	ireorder: entity {0:s}_ireorderer{1:d} generic map(dataBits=>dataBits)
 		port map(clk=>clk, phase=>phase, din=>din, dout=>core_din);
 
 	core_phase <= phase - {3:d} + 1 when rising_edge(clk);
 '''.format(*params)
-	code += '''
+	if is_fft2048_wrapper1:
+		code += '''
+	core: entity {0:s} generic map(dataBits=>dataBits, twBits=>twBits, inverse=>inverse)
+		port map(clk=>clk, phase=>core_phase({2:d}-1 downto 0), din=>core_din, dout=>core_dout);
+	
+	oreorderer_phase <= core_phase + 1811 when rising_edge(clk);
+	
+	oreorderer: entity {0:s}_oreorderer{1:d} generic map(dataBits=>dataBits)
+		port map(clk=>clk, phase=>oreorderer_phase, din=>core_dout, dout=>dout, dout_phase=>oreorderer_dout_phase);
+
+	valid_delay: entity work.sr_bit
+		generic map(len=>PIPELINE_DELAY_CYCLES)
+		port map(clk=>clk, din=>din_valid, dout=>dout_valid, ce=>'1');
+
+	dout_phase <= oreorderer_dout_phase;
+end ar;
+'''.format(*params)
+	else:
+		code += '''
 	core: entity {0:s} generic map(dataBits=>dataBits, twBits=>twBits)
 		port map(clk=>clk, phase=>core_phase({2:d}-1 downto 0), din=>core_din, dout=>core_dout);
 	
