@@ -17,15 +17,12 @@ entity fft2048_wide_wrapper1 is
 	generic(dataBits: integer := 24; twBits: integer := 12; inverse: boolean := true);
 	port(clk: in std_logic;
 			din: in complex;
-			din_valid: in std_logic := '1';
 			phase: in unsigned(11-1 downto 0);
 			dout: out complex;
-			dout_valid: out std_logic;
 			dout_phase: out unsigned(11-1 downto 0)
 			);
 end entity;
 architecture ar of fft2048_wide_wrapper1 is
-	constant PIPELINE_DELAY_CYCLES: integer := 6382;
 	signal core_din, core_dout: complex := to_complex(0, 0);
 	signal core_phase: unsigned(11-1 downto 0) := (others => '0');
 	signal oreorderer_phase: unsigned(11-1 downto 0) := (others => '0');
@@ -44,10 +41,6 @@ begin
 	
 	oreorderer: entity fft2048_wide_oreorderer1 generic map(dataBits=>dataBits)
 		port map(clk=>clk, phase=>oreorderer_phase, din=>core_dout, dout=>dout, dout_phase=>oreorderer_dout_phase);
-
-	valid_delay: entity work.sr_bit
-		generic map(len=>PIPELINE_DELAY_CYCLES)
-		port map(clk=>clk, din=>din_valid, dout=>dout_valid, ce=>'1');
 
 	dout_phase <= oreorderer_dout_phase;
 end ar;
