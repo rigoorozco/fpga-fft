@@ -18,15 +18,13 @@ entity fft2048_wide_wrapper4 is
 	port(clk: in std_logic;
 		din: in complex;
 		phase: in unsigned(13-1 downto 0);
-		dout: out complex;
-		dout_phase: out unsigned(13-1 downto 0)
+		dout: out complex
 		);
 end entity;
 architecture ar of fft2048_wide_wrapper4 is
 	signal core_din, core_dout: complex;
 	signal core_phase: unsigned(13-1 downto 0);
 	signal oreorderer_phase: unsigned(13-1 downto 0);
-	signal oreorderer_dout_phase: unsigned(13-1 downto 0);
 begin
 
 	ireorder: entity fft2048_wide_ireorderer4 generic map(dataBits=>dataBits)
@@ -40,7 +38,5 @@ begin
 	oreorderer_phase <= core_phase - 2286 + 1 when rising_edge(clk);
 	
 	oreorderer: entity fft2048_wide_oreorderer4 generic map(dataBits=>dataBits)
-		port map(clk=>clk, phase=>oreorderer_phase, din=>core_dout, dout=>dout, dout_phase=>oreorderer_dout_phase);
-
-	dout_phase <= oreorderer_dout_phase;
+		port map(clk=>clk, phase=>oreorderer_phase, din=>core_dout, dout=>dout);
 end ar;
