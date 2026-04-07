@@ -321,21 +321,25 @@ use work.{0:s}_ireorderer{1:d};
 -- din should be ch0d0, ch1d0, ch2d0, ch3d0, ch0d1, ch1d1, ... (if 4 channels)
 -- delay is {0:d}
 entity {1:s} is
-	generic(dataBits: integer := 24; twBits: integer := 12);
+'''.format(*params)
+	code += '\tgeneric(dataBits: integer := 24; twBits: integer := 12; inverse: boolean := true);\n'
+	code += '''
 	port(clk: in std_logic;
 		din: in complex;
-		phase: in unsigned({2:d}-1 downto 0);
+		din_phase: in unsigned({2:d}-1 downto 0);
 		dout: out complex;
 		dout_phase: out unsigned({2:d}-1 downto 0)
 		);
 end entity;
 architecture ar of {1:s} is
-	signal core_din, core_dout: complex;
-	signal core_phase: unsigned({2:d}-1 downto 0);
-	signal oreorderer_phase: unsigned({2:d}-1 downto 0);
-	signal oreorderer_dout_phase: unsigned({2:d}-1 downto 0);
-begin
 '''.format(*params)
+	code += '\tsignal core_din, core_dout: complex := to_complex(0, 0);\n'
+	code += '\tsignal core_phase: unsigned({0:d}-1 downto 0) := (others => \'0\');\n'.format(totalBits)
+	code += '\tsignal oreorderer_phase: unsigned({0:d}-1 downto 0) := (others => \'0\');\n'.format(totalBits)
+	code += '\tsignal oreorderer_dout_phase: unsigned({0:d}-1 downto 0) := (others => \'0\');\n'.format(totalBits)
+	code += '''
+begin
+'''
 
 	#          0         1      2         3            4
 	params = [fftName, rows, colBits, reorderDelay, fft.delay()]
@@ -343,21 +347,22 @@ begin
 	if skipInputReorder:
 		code += '''
 	core_din <= din;
-	core_phase <= phase;
+	core_phase <= din_phase;
 '''
 	else:
 		code += '''
 	ireorder: entity {0:s}_ireorderer{1:d} generic map(dataBits=>dataBits)
-		port map(clk=>clk, phase=>phase, din=>din, dout=>core_din);
-
-	core_phase <= phase - {3:d} + 1 when rising_edge(clk);
+		port map(clk=>clk, phase=>din_phase, din=>din, dout=>core_din);
+	core_phase <= din_phase - {3:d} + 1 when rising_edge(clk);
 '''.format(*params)
 	code += '''
-	core: entity {0:s} generic map(dataBits=>dataBits, twBits=>twBits)
+	core: entity {0:s} generic map(dataBits=>dataBits, twBits=>twBits, inverse=>inverse)
 		port map(clk=>clk, phase=>core_phase({2:d}-1 downto 0), din=>core_din, dout=>core_dout);
-	
+'''.format(*params)
+	code += '''
 	oreorderer_phase <= core_phase - {4:d} + 1 when rising_edge(clk);
-	
+'''.format(*params)
+	code += '''
 	oreorderer: entity {0:s}_oreorderer{1:d} generic map(dataBits=>dataBits)
 		port map(clk=>clk, phase=>oreorderer_phase, din=>core_dout, dout=>dout, dout_phase=>oreorderer_dout_phase);
 

@@ -15,30 +15,31 @@ use work.fft2048_wide_ireorderer1;
 -- delay is 6382
 entity fft2048_wide_wrapper1 is
 	generic(dataBits: integer := 24; twBits: integer := 12; inverse: boolean := true);
+
 	port(clk: in std_logic;
-			din: in complex;
-			phase: in unsigned(11-1 downto 0);
-			dout: out complex;
-			dout_phase: out unsigned(11-1 downto 0)
-			);
+		din: in complex;
+		din_phase: in unsigned(11-1 downto 0);
+		dout: out complex;
+		dout_phase: out unsigned(11-1 downto 0)
+		);
 end entity;
 architecture ar of fft2048_wide_wrapper1 is
 	signal core_din, core_dout: complex := to_complex(0, 0);
 	signal core_phase: unsigned(11-1 downto 0) := (others => '0');
 	signal oreorderer_phase: unsigned(11-1 downto 0) := (others => '0');
 	signal oreorderer_dout_phase: unsigned(11-1 downto 0) := (others => '0');
+
 begin
 
 	ireorder: entity fft2048_wide_ireorderer1 generic map(dataBits=>dataBits)
-		port map(clk=>clk, phase=>phase, din=>din, dout=>core_din);
-
-	core_phase <= phase + 1 when rising_edge(clk);
+		port map(clk=>clk, phase=>din_phase, din=>din, dout=>core_din);
+	core_phase <= din_phase - 2048 + 1 when rising_edge(clk);
 
 	core: entity fft2048_wide generic map(dataBits=>dataBits, twBits=>twBits, inverse=>inverse)
 		port map(clk=>clk, phase=>core_phase(11-1 downto 0), din=>core_din, dout=>core_dout);
-	
-	oreorderer_phase <= core_phase + 1811 when rising_edge(clk);
-	
+
+	oreorderer_phase <= core_phase - 2286 + 1 when rising_edge(clk);
+
 	oreorderer: entity fft2048_wide_oreorderer1 generic map(dataBits=>dataBits)
 		port map(clk=>clk, phase=>oreorderer_phase, din=>core_dout, dout=>dout, dout_phase=>oreorderer_dout_phase);
 
